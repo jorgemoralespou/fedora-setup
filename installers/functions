@@ -76,7 +76,7 @@ function install_zip {
    local _target_file=${TEMP_DIR}/${_package_name}.zip
 
    echo "Going to install $_package_name ...."
-   # wget ${_dl_link} -O ${_target_file}
+   wget ${_dl_link} -O ${_target_file}
    if [ -e ${_target_file} ]
    then
       if [ ! -d  ${_install_dir} ]
