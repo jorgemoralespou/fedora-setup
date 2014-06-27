@@ -1,0 +1,116 @@
+#!/bin/bash
+
+: ${TEMP_DIR:="/tmp"}
+
+function fail_if_not_root {
+   if [ "$UID" -ne 0 ]
+   then
+	   echo "To run this script you need root permissions (either root or sudo)"
+	   exit
+   fi 
+}
+
+fail_if_not_root
+
+
+#
+# Downloads and installs/updates an rpm
+#
+# Arguments:
+#   $1: package name
+#   $2: install_dir
+function make_link {
+   local _package_name=$1
+   local _install_dir=$2  
+
+   # Remove old link, if it exists
+   if [ -h ${_install_dir}/$_package_name ]
+   then
+      rm ${_install_dir}/$_package_name
+   fi
+   _EXTRACTED_DIR=$(ls -rtd ${_install_dir}/*${_package_name}* | tail -1)
+   echo "Creating symbolic link ${_install_dir}/$_package_name to $_EXTRACTED_DIR"
+   ln -s $_EXTRACTED_DIR ${_install_dir}/$_package_name
+}
+
+#
+# Downloads and installs/updates an rpm
+#
+# Arguments:
+#   $1: package name
+#   $2: download link
+function install_rpm {
+   local _package_name=$1
+   local _dl_link=$2
+   local _target_file=${TEMP_DIR}/${_package_name}.rpm
+
+   echo "Going to install $_package_name ...."
+   wget ${_dl_link} -O ${_target_file}
+   if [ -e ${_target_file} ]
+   then
+      if [ ! -z $(rpm -q $_package_name) ]
+      then
+         echo "Updating $_package_name as it was already installed"
+         rpm -Uvh --force ${_target_file}
+      else
+         echo "Installing $_package_name"
+         rpm -ivh ${_target_file}
+      fi
+      rm -f ${_target_file}
+   else
+      echo "File ${_target_file} does not exist. Download again, or verify download path: ${_dl_link}"
+   fi
+}
+
+#
+# Downloads and installs/updates a zip
+#
+# Arguments:
+#   $1: package name
+#   $2: download link
+#   $3: install dir
+function install_zip {
+   local _package_name=$1
+   local _dl_link=$2
+   local _install_dir=$3
+   local _target_file=${TEMP_DIR}/${_package_name}.zip
+
+   echo "Going to install $_package_name ...."
+   # wget ${_dl_link} -O ${_target_file}
+   if [ -e ${_target_file} ]
+   then
+      if [ ! -d  ${_install_dir} ]
+      then
+         mkdir ${_install_dir}
+      fi
+      unzip -o ${_target_file} -d ${_install_dir}
+      rm -f ${_target_file}
+   else
+      echo "File ${_target_file} does not exist. Download again, or verify download path: ${_dl_link}"
+   fi
+   
+}
+
+#
+# Downloads and installs/updates a tar.gz
+#
+# Arguments:
+#   $1: package name
+#   $2: download link
+#   $3: install dir
+function install_targz {
+   local _package_name=$1
+   local _dl_link=$2
+   local _install_dir=$3
+   local _target_file=${TEMP_DIR}/${_package_name}.tar.gz
+
+   echo "Going to install $_package_name ...."
+   wget ${_dl_link} -O ${_target_file}
+   if [ -e ${_target_file} ]
+   then
+      tar -xvzf ${_target_file} -C ${_install_dir}
+      rm -f ${_target_file}
+   else
+      echo "File ${_target_file} does not exist. Download again, or verify download path: ${_dl_link}"
+   fi
+}
